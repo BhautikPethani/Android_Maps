@@ -33,6 +33,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private static final int REQUEST_CODE = 1;
     private Marker homeMarker;
 
+    List<Marker> markers = new ArrayList();
+
     LocationManager locationManager;
     LocationListener locationListener;
 
@@ -78,6 +80,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             requestLocationPermission();
         else
             startUpdateLocation();
+
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(@NonNull LatLng latLng) {
+                setMarker(latLng);
+            }
+
+            private void setMarker(LatLng latLng) {
+                MarkerOptions options = new MarkerOptions().position(latLng)
+                        .title("City1");
+                Marker temp = mMap.addMarker(options);
+                temp.showInfoWindow();
+                markers.add(temp);
+            }
+        });
+
+
     }
 
     private void startUpdateLocation() {

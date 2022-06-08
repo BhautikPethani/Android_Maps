@@ -126,6 +126,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 MarkerOptions options = new MarkerOptions().position(latLng)
                         .title(zoneName);
+                if(counter>0) {
+                    double distance = calculationByDistance(latLng, markers.get(markers.size() - 1).getPosition());
+                    options.snippet("Distance ( " + markers.get(markers.size() - 1).getTitle() + " to " + zoneName + ") : " + String.format("%.2f", distance) + " KM");
+                }
                 Marker temp = mMap.addMarker(options);
                 temp.showInfoWindow();
                 if(counter>0){

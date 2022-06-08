@@ -35,7 +35,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GoogleMap mMap;
     private static final int REQUEST_CODE = 1;
     private Marker homeMarker;
-    Polygon shape;
+    Polygon polygon;
 
     List<Marker> markers = new ArrayList();
     int counter = 0;
@@ -93,16 +93,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public void onMapClick(@NonNull LatLng latLng) {
                 if(counter <= 3) {
-                    setMarker(latLng);
+                    setPolygoneMarker(latLng);
                     if(counter == 3)
                         drawPolygon();
                     counter ++;
                 }else{
-
+                    setGeneralMarker(latLng);
                 }
             }
 
-            private void setMarker(LatLng latLng) {
+            private void setPolygoneMarker(LatLng latLng) {
                 String zoneName = "";
 
                 if(!zone.contains("A")){
@@ -123,6 +123,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 zone.add(zoneName);
             }
 
+            private void setGeneralMarker(LatLng latLng) {
+                MarkerOptions options = new MarkerOptions().position(latLng);
+                Marker temp = mMap.addMarker(options);
+            }
+
             private void drawPolygon(){
                 PolygonOptions options = new PolygonOptions()
                         .fillColor((Color.argb(100, 3,255,70)))
@@ -133,7 +138,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     options.add(markers.get(i).getPosition());
                 }
 
-                shape = mMap.addPolygon(options);
+                polygon = mMap.addPolygon(options);
+            }
+        });
+
+        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(@NonNull Marker marker) {
+                if(markers.contains(marker)) {
+                    markers.remove(marker);
+                    String title = marker.getTitle();
+                    zone.remove(title);
+                    counter-=1;
+                    marker.remove();
+                    polygon.remove();
+                }else{
+                    marker.remove();
+                }
+                return true;
             }
         });
 

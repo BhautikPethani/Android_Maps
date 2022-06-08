@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
@@ -18,6 +19,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -27,6 +29,7 @@ import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.maps.android.ui.BubbleIconFactory;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -108,6 +111,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
             private void setPolygoneMarker(LatLng latLng) {
+
                 String zoneName = "";
 
                 if(!zone.contains("A")){
@@ -136,27 +140,48 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 Marker temp = mMap.addMarker(options);
             }
 
-            private void drawPolygon(){
+            private void drawPolygon() {
                 PolygonOptions options = new PolygonOptions()
-                        .fillColor((Color.argb(100, 3,255,70)));
+                        .fillColor((Color.argb(100, 3, 255, 70)));
 
-                for (int i=0; i<4; i++) {
+                for (int i = 0; i < 4; i++) {
                     options.add(markers.get(i).getPosition());
                 }
 
                 polygon = mMap.addPolygon(options);
+                polygon.setClickable(true);
             }
 
             private void drawPolyline(Marker source, Marker destination){
                 PolylineOptions options = new PolylineOptions()
                         .color(Color.RED)
                         .width(10)
-                        .clickable(true)
                         .add(source.getPosition(), destination.getPosition());
                 Polyline temp = mMap.addPolyline(options);
                 double distance = calculationByDistance(source.getPosition(), destination.getPosition());
                 temp.setTag(String.valueOf(distance));
                 polylines.add(temp);
+            }
+        });
+
+        mMap.setOnPolygonClickListener(new GoogleMap.OnPolygonClickListener() {
+            @Override
+            public void onPolygonClick(@NonNull Polygon polygon) {
+                //Log.d("Polygone click","Clicked");
+                removeEverything();
+            }
+
+            private void removeEverything(){
+                polygon.remove();
+                for(Polyline temp : polylines){
+                    temp.remove();
+                }
+                for(Marker temp : markers){
+                    temp.remove();
+                }
+                markers.removeAll(markers);
+                polylines.remove(polylines);
+                counter = 0;
             }
         });
 
@@ -170,7 +195,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     counter-=1;
                     removeAllPolyline();
                     marker.remove();
-                    polygon.remove();
+
+                    if(polygon != null)
+                        polygon.remove();
                     addAllPolyline();
                 }else{
                     if(!marker.getTitle().equals("NORTH AMERICA")){

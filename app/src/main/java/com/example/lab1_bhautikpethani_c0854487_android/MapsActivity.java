@@ -26,7 +26,9 @@ import com.example.lab1_bhautikpethani_c0854487_android.databinding.ActivityMaps
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +40,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     Polygon polygon;
 
     List<Marker> markers = new ArrayList();
+    List<Polyline> polylines = new ArrayList();
     int counter = 0;
 
     ArrayList<String> zone = new ArrayList<String>(4);
@@ -89,13 +92,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         else
             startUpdateLocation();
 
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
-            public void onMapClick(@NonNull LatLng latLng) {
+            public void onMapLongClick(@NonNull LatLng latLng) {
                 if(counter <= 3) {
                     setPolygoneMarker(latLng);
-                    if(counter == 3)
+                    if(counter == 3) {
                         drawPolygon();
+                        drawPolyline(markers.get(0), markers.get(markers.size() - 1));
+                    }
                     counter ++;
                 }else{
                     setGeneralMarker(latLng);
@@ -119,26 +124,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         .title(zoneName);
                 Marker temp = mMap.addMarker(options);
                 temp.showInfoWindow();
+                if(counter>0){
+                    drawPolyline(markers.get(markers.size()-1), temp);
+                }
                 markers.add(temp);
                 zone.add(zoneName);
             }
 
             private void setGeneralMarker(LatLng latLng) {
-                MarkerOptions options = new MarkerOptions().position(latLng);
+                MarkerOptions options = new MarkerOptions().position(latLng).title("Destination");
                 Marker temp = mMap.addMarker(options);
             }
 
             private void drawPolygon(){
                 PolygonOptions options = new PolygonOptions()
-                        .fillColor((Color.argb(100, 3,255,70)))
-                        .strokeColor(Color.RED)
-                        .strokeWidth(10);
+                        .fillColor((Color.argb(100, 3,255,70)));
 
                 for (int i=0; i<4; i++) {
                     options.add(markers.get(i).getPosition());
                 }
 
                 polygon = mMap.addPolygon(options);
+            }
+
+            private void drawPolyline(Marker source, Marker destination){
+                PolylineOptions options = new PolylineOptions()
+                        .color(Color.RED)
+                        .width(10)
+                        .clickable(true)
+                        .add(source.getPosition(), destination.getPosition());
+                Polyline temp = mMap.addPolyline(options);
+                double distance = calculationByDistance(source.getPosition(), destination.getPosition());
+                temp.setTag(String.valueOf(distance));
+                polylines.add(temp);
             }
         });
 
@@ -150,16 +168,72 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     String title = marker.getTitle();
                     zone.remove(title);
                     counter-=1;
+                    removeAllPolyline();
                     marker.remove();
                     polygon.remove();
+                    addAllPolyline();
                 }else{
-                    marker.remove();
+                    if(!marker.getTitle().equals("NORTH AMERICA")){
+                        marker.remove();
+                    }
                 }
                 return true;
+            }
+
+            private void removeAllPolyline(){
+                for(Polyline temp : polylines){
+                    temp.remove();
+                }
+                polylines.removeAll(polylines);
+            }
+
+            private void addAllPolyline(){
+                if(counter > 0){
+                    for(int i=1; i<counter; i++){
+                        drawPolyline(markers.get(i), markers.get(i-1));
+                    }
+                }
+            }
+
+            private void drawPolyline(Marker source, Marker destination){
+                PolylineOptions options = new PolylineOptions()
+                        .color(Color.RED)
+                        .width(10)
+                        .clickable(true)
+                        .add(source.getPosition(), destination.getPosition());
+                Polyline temp = mMap.addPolyline(options);
+                double distance = calculationByDistance(source.getPosition(), destination.getPosition());
+                temp.setTag(String.valueOf(distance));
+                polylines.add(temp);
             }
         });
 
 
+    }
+
+    public double calculationByDistance(LatLng StartP, LatLng EndP) {
+        int Radius = 6371;// radius of earth in Km
+        double lat1 = StartP.latitude;
+        double lat2 = EndP.latitude;
+        double lon1 = StartP.longitude;
+        double lon2 = EndP.longitude;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1))
+                * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2)
+                * Math.sin(dLon / 2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        double valueResult = Radius * c;
+        double km = valueResult / 1;
+        DecimalFormat newFormat = new DecimalFormat("####");
+        int kmInDec = Integer.valueOf(newFormat.format(km));
+        double meter = valueResult % 1000;
+        int meterInDec = Integer.valueOf(newFormat.format(meter));
+        Log.i("Radius Value", "" + valueResult + "   KM  " + kmInDec
+                + " Meter   " + meterInDec);
+
+        return Radius * c;
     }
 
     private void startUpdateLocation() {
